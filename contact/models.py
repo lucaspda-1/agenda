@@ -14,12 +14,18 @@ from django.utils import timezone
 
 # Create your models here.
 class Category(models.Model):
+    class Meta:
+        verbose_name = 'Categoria'
+
     name = models.CharField(max_length=50)
 
     def __str__(self) -> str:
         return f'{self.name}'
 
 class Contact(models.Model):
+    class Meta:
+        verbose_name = 'Contato'
+
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50, blank=True)
     phone = models.CharField(max_length=50)
