@@ -1,74 +1,78 @@
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 
-from contact.forms import ContactForm
 from contact.models import Contact
 
 
-def create(request):
-    form_action = reverse('contact:create')
+def index(request):
+    contacts = Contact.objects \
+        .filter(show=True)\
+        .order_by('-id')
 
-    if request.method == 'POST':
-        form = ContactForm(request.POST)
-
-        context = {
-            'form': form,
-            'form_action': form_action,
-        }
-
-        if form.is_valid():
-            contact = form.save()
-            return redirect('contact:update', contact_id=contact.pk)
-
-        return render(
-            request,
-            'contact/create.html',
-            context
-        )
+    paginator = Paginator(contacts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'form': ContactForm(),
-        'form_action': form_action,
+        'page_obj': page_obj,
+        'site_title': 'Contatos - '
     }
 
     return render(
         request,
-        'contact/create.html',
+        'contact/index.html',
         context
     )
 
 
-def update(request, contact_id):
-    contact = get_object_or_404(
-        Contact, pk=contact_id, show=True
-    )
-    form_action = reverse('contact:update', args=(contact_id,))
+def search(request):
+    search_value = request.GET.get('q', '').strip()
 
-    if request.method == 'POST':
-        form = ContactForm(request.POST, instance=contact)
+    if search_value == '':
+        return redirect('contact:index')
 
-        context = {
-            'form': form,
-            'form_action': form_action,
-        }
+    contacts = Contact.objects \
+        .filter(show=True)\
+        .filter(
+            Q(first_name__icontains=search_value) |
+            Q(last_name__icontains=search_value) |
+            Q(phone__icontains=search_value) |
+            Q(email__icontains=search_value)
+        )\
+        .order_by('-id')
 
-        if form.is_valid():
-            contact = form.save()
-            return redirect('contact:update', contact_id=contact.pk)
-
-        return render(
-            request,
-            'contact/create.html',
-            context
-        )
+    paginator = Paginator(contacts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'form': ContactForm(instance=contact),
-        'form_action': form_action,
+        'page_obj': page_obj,
+        'site_title': 'Search - ',
+        'search_value': search_value,
     }
 
     return render(
         request,
-        'contact/create.html',
+        'contact/index.html',
+        context
+    )
+
+
+def contact(request, contact_id):
+    # single_contact = Contact.objects.filter(pk=contact_id).first()
+    single_contact = get_object_or_404(
+        Contact, pk=contact_id, show=True
+    )
+    site_title = f'{single_contact.first_name} {single_contact.last_name} - '
+
+    context = {
+        'contact': single_contact,
+        'site_title': site_title
+    }
+
+    return render(
+        request,
+        'contact/contact.html',
         context
     )
